@@ -32,13 +32,13 @@ const Home = () => {
 
     const fetchComics = async () => {
       try {
-        const res = await fetch("/api-komiku/komiku");
+        const res = await fetch("/https://weeb-scraper.onrender.com/api");
         const json = await res.json();
 
         const filtered: Comic[] = [];
         for (const comic of json.data.slice(0, 30)) {
           try {
-            const detailRes = await fetch(`/api-komiku/komiku/${comic.param}`);
+            const detailRes = await fetch(`https://weeb-scraper.onrender.com/api${comic.param}`);
             const detailJson = await detailRes.json();
             if (
               !detailJson.data.genre.some((g: string) =>
