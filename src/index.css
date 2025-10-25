@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* sembunyikan scrollbar di semua browser */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* cursor drag halus */
+.active {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+}
