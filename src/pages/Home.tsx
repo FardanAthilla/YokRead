@@ -47,12 +47,15 @@ const Home = () => {
             ) {
               filtered.push(comic);
             }
-          } catch {}
+          } catch (err) {
+            console.error("Gagal fetch detail:", err);
+          }
         }
 
         setComics(filtered);
         sessionStorage.setItem("comics", JSON.stringify(filtered));
-      } catch {
+      } catch (err) {
+        console.error("Gagal fetch data:", err);
       } finally {
         setLoading(false);
       }
@@ -61,53 +64,39 @@ const Home = () => {
     fetchComics();
   }, []);
 
-  // ✅ drag-scroll yang bener di desktop + mobile
+  // Drag scroll
   useEffect(() => {
-    const slider = scrollRef.current;
-    if (!slider) return;
+    const el = scrollRef.current;
+    if (!el) return;
 
     let isDown = false;
     let startX: number;
     let scrollLeft: number;
 
-    const start = (e: MouseEvent | TouchEvent) => {
+    const start = (e: MouseEvent) => {
       isDown = true;
-      slider.classList.add("active");
-      startX =
-        ("touches" in e ? e.touches[0].pageX : e.pageX) - slider.offsetLeft;
-      scrollLeft = slider.scrollLeft;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
     };
-
-    const end = () => {
-      isDown = false;
-      slider.classList.remove("active");
-    };
-
-    const move = (e: MouseEvent | TouchEvent) => {
+    const stop = () => (isDown = false);
+    const move = (e: MouseEvent) => {
       if (!isDown) return;
       e.preventDefault();
-      const x =
-        ("touches" in e ? e.touches[0].pageX : e.pageX) - slider.offsetLeft;
-      const walk = (x - startX) * 1.3;
-      slider.scrollLeft = scrollLeft - walk;
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX) * 1.2; // kecepatan geser
+      el.scrollLeft = scrollLeft - walk;
     };
 
-    slider.addEventListener("mousedown", start);
-    slider.addEventListener("mouseleave", end);
-    slider.addEventListener("mouseup", end);
-    slider.addEventListener("mousemove", move);
-    slider.addEventListener("touchstart", start, { passive: false });
-    slider.addEventListener("touchend", end);
-    slider.addEventListener("touchmove", move, { passive: false });
+    el.addEventListener("mousedown", start);
+    el.addEventListener("mouseleave", stop);
+    el.addEventListener("mouseup", stop);
+    el.addEventListener("mousemove", move);
 
     return () => {
-      slider.removeEventListener("mousedown", start);
-      slider.removeEventListener("mouseleave", end);
-      slider.removeEventListener("mouseup", end);
-      slider.removeEventListener("mousemove", move);
-      slider.removeEventListener("touchstart", start);
-      slider.removeEventListener("touchend", end);
-      slider.removeEventListener("touchmove", move);
+      el.removeEventListener("mousedown", start);
+      el.removeEventListener("mouseleave", stop);
+      el.removeEventListener("mouseup", stop);
+      el.removeEventListener("mousemove", move);
     };
   }, []);
 
@@ -117,7 +106,7 @@ const Home = () => {
   };
 
   return (
-    <div className="p-6 select-none">
+    <div className="p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Daftar Komik Populer</h1>
 
       {/* 🔍 Search Bar */}
@@ -140,7 +129,7 @@ const Home = () => {
         </button>
       </form>
 
-      {/* 📚 Komik Scroll */}
+      {/* 📚 Daftar Komik */}
       <div className="min-h-[300px]">
         {loading ? (
           <div className="flex justify-center items-center py-20">
@@ -153,7 +142,7 @@ const Home = () => {
         ) : (
           <div
             ref={scrollRef}
-            className="flex gap-5 overflow-x-scroll no-scrollbar cursor-grab active:cursor-grabbing pb-4"
+            className="flex gap-5 overflow-x-auto scroll-smooth pb-4 no-scrollbar cursor-grab active:cursor-grabbing"
           >
             {comics.slice(0, 15).map((comic) => (
               <div
@@ -168,13 +157,15 @@ const Home = () => {
                 <img
                   src={comic.thumbnail}
                   alt={comic.title}
-                  className="rounded-t-xl w-full h-56 object-cover pointer-events-none"
+                  className="rounded-t-xl w-full h-56 object-cover"
                 />
-                <div className="p-3 pointer-events-none">
+                <div className="p-3">
                   <h2 className="text-lg font-semibold line-clamp-2">
                     {comic.title}
                   </h2>
-                  <p className="text-sm text-gray-500">{comic.latest_chapter}</p>
+                  <p className="text-sm text-gray-500">
+                    {comic.latest_chapter}
+                  </p>
                 </div>
               </div>
             ))}
@@ -182,9 +173,9 @@ const Home = () => {
         )}
       </div>
 
-      {/* 🧩 Genre */}
+      {/* 🧩 Berdasarkan Genre */}
       <h2 className="text-2xl font-bold mt-10 mb-4">Berdasarkan Genre</h2>
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3">
+      <div className="flex gap-3 overflow-x-auto scroll-smooth no-scrollbar pb-3">
         {genres.map((genre) => (
           <button
             key={genre}
