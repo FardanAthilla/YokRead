@@ -1,61 +1,33 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Comic } from "../types/types";
-
-const genres = [
-  "action",
-  "adventure",
-  "comedy",
-  "romance",
-  "drama",
-  "fantasy",
-  "school",
-  "horror",
-  "isekai",
-  "sci-fi",
-];
 
 const Home = () => {
   const [comics, setComics] = useState<Comic[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const cachedComics = sessionStorage.getItem("comics");
-    if (cachedComics) {
-      setComics(JSON.parse(cachedComics));
-      setLoading(false);
-      return;
-    }
-
     const fetchComics = async () => {
       try {
-        const res = await fetch("/https://weeb-scraper.onrender.com/api");
-        const json = await res.json();
+        setLoading(true);
 
-        const filtered: Comic[] = [];
-        for (const comic of json.data.slice(0, 30)) {
-          try {
-            const detailRes = await fetch(`https://weeb-scraper.onrender.com/api${comic.param}`);
-            const detailJson = await detailRes.json();
-            if (
-              !detailJson.data.genre.some((g: string) =>
-                g.toLowerCase().includes("ecchi")
-              )
-            ) {
-              filtered.push(comic);
-            }
-          } catch (err) {
-            console.error("Gagal fetch detail:", err);
-          }
-        }
+        // 🔹 Ambil dua halaman sekaligus
+        const [res1, res2] = await Promise.all([
+          fetch("/api-komiku/komiku?page=1"),
+          fetch("/api-komiku/komiku?page=2"),
+        ]);
 
-        setComics(filtered);
-        sessionStorage.setItem("comics", JSON.stringify(filtered));
+        const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
+
+        // 🔹 Gabung hasil dari dua halaman
+        const combined = [...(json1.data || []), ...(json2.data || [])];
+
+        // 🔹 Simpan ke state
+        setComics(combined);
       } catch (err) {
-        console.error("Gagal fetch data:", err);
+        console.error("Gagal mengambil data komik:", err);
       } finally {
         setLoading(false);
       }
@@ -64,50 +36,18 @@ const Home = () => {
     fetchComics();
   }, []);
 
-  // Drag scroll
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    let isDown = false;
-    let startX: number;
-    let scrollLeft: number;
-
-    const start = (e: MouseEvent) => {
-      isDown = true;
-      startX = e.pageX - el.offsetLeft;
-      scrollLeft = el.scrollLeft;
-    };
-    const stop = () => (isDown = false);
-    const move = (e: MouseEvent) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - el.offsetLeft;
-      const walk = (x - startX) * 1.2; // kecepatan geser
-      el.scrollLeft = scrollLeft - walk;
-    };
-
-    el.addEventListener("mousedown", start);
-    el.addEventListener("mouseleave", stop);
-    el.addEventListener("mouseup", stop);
-    el.addEventListener("mousemove", move);
-
-    return () => {
-      el.removeEventListener("mousedown", start);
-      el.removeEventListener("mouseleave", stop);
-      el.removeEventListener("mouseup", stop);
-      el.removeEventListener("mousemove", move);
-    };
-  }, []);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (search.trim()) navigate(`/search?q=${encodeURIComponent(search)}`);
+    if (search.trim()) {
+      navigate(`/search?q=${encodeURIComponent(search)}`);
+    }
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">Daftar Komik Populer</h1>
+    <div className="px-6 sm:px-10 md:px-16 lg:px-24 py-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Daftar Komik Populer
+      </h1>
 
       {/* 🔍 Search Bar */}
       <form
@@ -116,7 +56,7 @@ const Home = () => {
       >
         <input
           type="text"
-          placeholder="Cari komik..."
+          placeholder="Cari komik (contoh: Kaguya)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded-lg px-4 py-2 w-full focus:ring focus:ring-blue-300"
@@ -135,19 +75,20 @@ const Home = () => {
           <div className="flex justify-center items-center py-20">
             <img
               src="https://www.svgrepo.com/show/173880/loading-arrows.svg"
-              alt="Loading"
+              alt="Loading icon"
               className="w-16 h-16 animate-spin"
             />
           </div>
+        ) : comics.length === 0 ? (
+          <div className="text-center text-gray-500 py-20">
+            ❌ Tidak ada komik yang ditemukan
+          </div>
         ) : (
-          <div
-            ref={scrollRef}
-            className="flex gap-5 overflow-x-auto scroll-smooth pb-4 no-scrollbar cursor-grab active:cursor-grabbing"
-          >
-            {comics.slice(0, 15).map((comic) => (
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {comics.map((comic) => (
               <div
                 key={comic.param}
-                className="flex-none w-1/5 bg-white rounded-xl shadow hover:scale-105 transition cursor-pointer"
+                className="bg-white rounded-xl shadow hover:scale-105 transition cursor-pointer"
                 onClick={() =>
                   navigate(`/detail/${encodeURIComponent(comic.param)}`, {
                     state: comic.detail_url,
@@ -157,7 +98,7 @@ const Home = () => {
                 <img
                   src={comic.thumbnail}
                   alt={comic.title}
-                  className="rounded-t-xl w-full h-56 object-cover"
+                  className="rounded-t-xl w-full h-44 md:h-72 object-cover"
                 />
                 <div className="p-3">
                   <h2 className="text-lg font-semibold line-clamp-2">
@@ -171,20 +112,6 @@ const Home = () => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* 🧩 Berdasarkan Genre */}
-      <h2 className="text-2xl font-bold mt-10 mb-4">Berdasarkan Genre</h2>
-      <div className="flex gap-3 overflow-x-auto scroll-smooth no-scrollbar pb-3">
-        {genres.map((genre) => (
-          <button
-            key={genre}
-            onClick={() => navigate(`/genre/${genre}`)}
-            className="px-4 py-2 bg-gray-200 rounded-full hover:bg-gray-300 whitespace-nowrap"
-          >
-            {genre.toUpperCase()}
-          </button>
-        ))}
       </div>
     </div>
   );

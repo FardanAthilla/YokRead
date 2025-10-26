@@ -19,3 +19,19 @@ export interface ComicDetail {
     detail_url: string
   }[]
 }
+
+// types.ts
+export interface ComicChapter {
+  chapter: string;
+  param: string;
+  release: string;
+  detail_url: string;
+}
+
+export interface ComicDetail {
+  title: string;
+  thumbnail: string;
+  synopsis: string;
+  genre: string[];
+  chapters: ComicChapter[];
+}

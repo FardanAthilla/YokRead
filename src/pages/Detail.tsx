@@ -8,16 +8,9 @@ const Detail = () => {
   const navigate = useNavigate();
   const detailUrl = location.state as string | undefined;
   const [comic, setComic] = useState<ComicDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const cacheKey = `detail-${param}`;
-    const cached = sessionStorage.getItem(cacheKey);
-
-    if (cached) {
-      setComic(JSON.parse(cached));
-      return; // langsung pakai cache
-    }
-
     const fetchDetail = async () => {
       try {
         const proxyUrl =
@@ -26,21 +19,30 @@ const Detail = () => {
             ?.replace("http://weeb-scraper.onrender.com/api", "/api-komiku") ||
           `/api-komiku/komiku/${param}`;
 
-        console.log("🔍 Fetching detail from:", proxyUrl);
+        console.log("🎯 Fetching comic detail from:", proxyUrl);
 
         const res = await fetch(proxyUrl);
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
 
         const json = await res.json();
-        setComic(json.data);
-        sessionStorage.setItem(cacheKey, JSON.stringify(json.data));
-      } catch (err) {
+        console.log("✅ Comic detail result:", json);
+
+        setComic(json.data as ComicDetail);
+      } catch (err: any) {
         console.error("❌ Error fetching detail:", err);
+        setError(err.message);
       }
     };
 
     fetchDetail();
   }, [param, detailUrl]);
+
+  if (error)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-red-500">Gagal memuat data: {error}</p>
+      </div>
+    );
 
   if (!comic)
     return (
@@ -52,7 +54,7 @@ const Detail = () => {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/")}
         className="mb-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
       >
         ← Kembali
@@ -88,9 +90,19 @@ const Detail = () => {
           <li
             key={ch.param}
             className="p-3 border rounded-lg hover:bg-gray-100 cursor-pointer"
-            onClick={() =>
-              navigate(`/chapter/${ch.param}`, { state: ch.detail_url })
-            }
+            onClick={() => {
+              console.log("➡️ Navigating to chapter:", ch.param, ch.detail_url);
+              navigate(`/chapter/${ch.param}`, {
+                state: {
+                  detailUrl: ch.detail_url,
+                  chapters: comic.chapters,
+                  parentParam: param,
+                  currentIndex: comic.chapters.findIndex(
+                    (c) => c.param === ch.param
+                  ),
+                },
+              });
+            }}
           >
             <div className="flex justify-between items-center">
               <span>{ch.chapter}</span>
