@@ -4,70 +4,48 @@ import type { Comic } from "../types/types";
 
 const Home = () => {
   const [comics, setComics] = useState<Comic[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchComics = async () => {
-      try {
-        setLoading(true);
+  const fetchComics = async (pageNumber: number) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api-komiku/komiku?page=${pageNumber}`);
+      const json = await res.json();
 
-        // 🔹 Ambil dua halaman sekaligus
-        const [res1, res2] = await Promise.all([
-          fetch("/api-komiku/komiku?page=1"),
-          fetch("/api-komiku/komiku?page=2"),
-        ]);
-
-        const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
-
-        // 🔹 Gabung hasil dari dua halaman
-        const combined = [...(json1.data || []), ...(json2.data || [])];
-
-        // 🔹 Simpan ke state
-        setComics(combined);
-      } catch (err) {
-        console.error("Gagal mengambil data komik:", err);
-      } finally {
-        setLoading(false);
+      if (json.data?.length > 0) {
+        setComics(json.data);
+        setHasNext(true);
+      } else {
+        // kalau kosong, berarti udah halaman terakhir
+        setHasNext(false);
       }
-    };
-
-    fetchComics();
-  }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (search.trim()) {
-      navigate(`/search?q=${encodeURIComponent(search)}`);
+    } catch (err) {
+      console.error("Gagal mengambil data:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="px-6 sm:px-10 md:px-16 lg:px-24 py-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Daftar Komik Populer
-      </h1>
+  useEffect(() => {
+    fetchComics(page);
+  }, [page]);
 
-      {/* 🔍 Search Bar */}
-      <form
-        onSubmit={handleSearch}
-        className="flex justify-center mb-6 gap-2 max-w-lg mx-auto"
-      >
-        <input
-          type="text"
-          placeholder="Cari komik (contoh: Kaguya)..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg px-4 py-2 w-full focus:ring focus:ring-blue-300"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-        >
-          Cari
-        </button>
-      </form>
+  const handleNext = () => {
+    if (hasNext) setPage((p) => p + 1);
+  };
+
+  const handlePrev = () => {
+    if (page > 1) setPage((p) => p - 1);
+  };
+
+  return (
+    <div className="px-6 sm:px-10 md:px-16 lg:px-24 py-6 relative">
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-left">
+        Rilis Chapter Baru
+      </h1>
 
       {/* 📚 Daftar Komik */}
       <div className="min-h-[300px]">
@@ -84,11 +62,11 @@ const Home = () => {
             ❌ Tidak ada komik yang ditemukan
           </div>
         ) : (
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {comics.map((comic) => (
               <div
                 key={comic.param}
-                className="bg-white rounded-xl shadow hover:scale-105 transition cursor-pointer"
+                className="cursor-pointer hover:scale-105 transition-transform"
                 onClick={() =>
                   navigate(`/detail/${encodeURIComponent(comic.param)}`, {
                     state: comic.detail_url,
@@ -98,10 +76,10 @@ const Home = () => {
                 <img
                   src={comic.thumbnail}
                   alt={comic.title}
-                  className="rounded-t-xl w-full h-44 md:h-72 object-cover"
+                  className="rounded-xl w-full h-52 md:h-72 object-cover"
                 />
-                <div className="p-3">
-                  <h2 className="text-lg font-semibold line-clamp-2">
+                <div className="mt-2">
+                  <h2 className="text-base md:text-lg font-semibold line-clamp-2">
                     {comic.title}
                   </h2>
                   <p className="text-sm text-gray-500">
@@ -112,6 +90,35 @@ const Home = () => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 📄 Pagination */}
+      <div className="flex justify-center items-center gap-4 mt-8">
+        <button
+          onClick={handlePrev}
+          disabled={page === 1 || loading}
+          className={`px-4 py-2 rounded-lg ${
+            page === 1 || loading
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          ← Sebelumnya
+        </button>
+
+        <span className="text-gray-700 font-medium">Halaman {page}</span>
+
+        <button
+          onClick={handleNext}
+          disabled={!hasNext || loading}
+          className={`px-4 py-2 rounded-lg ${
+            !hasNext || loading
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          Berikutnya →
+        </button>
       </div>
     </div>
   );
