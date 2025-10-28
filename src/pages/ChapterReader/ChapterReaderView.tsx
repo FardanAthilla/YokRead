@@ -62,7 +62,7 @@ const ChapterReaderView = ({
   }
 
   return (
-    <div className="relative w-full md:max-w-3xl md:mx-auto md:p-4 min-h-screen text-white">
+    <div className="relative w-full md:max-w-3xl md:mx-auto md:p-4 min-h-screen text-white" onClick={handleToggleNavbar}>
       {/* Navbar atas */}
       <div
         className={`fixed top-0 left-0 w-full z-[9999] bg-black/90 backdrop-blur-md p-3 flex items-center text-white transition-transform duration-300 ${
@@ -95,7 +95,7 @@ const ChapterReaderView = ({
       </div>
 
       {/* Gambar halaman */}
-      <div className="flex flex-col" onClick={handleToggleNavbar}>
+      <div className="flex flex-col">
         {pages.map((img, i) => (
           <FadeInImage key={i} src={img} alt={`Page ${i + 1}`} />
         ))}
