@@ -15,9 +15,9 @@ const Detail = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Fetch detail data
-  const fetchDetail = async (url?: string, isNew = false) => {
+  const fetchDetail = async (url?: string) => {
+    setIsLoading(true);
     try {
-      if (isNew) setIsLoading(true);
       const proxyUrl =
         url
           ?.replace("https://weeb-scraper.onrender.com/api", "/api-komiku")
@@ -33,6 +33,7 @@ const Detail = () => {
       setError(err.message);
     } finally {
       setIsLoading(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -40,16 +41,14 @@ const Detail = () => {
     fetchDetail(detailUrl);
   }, [param, detailUrl]);
 
-  // Loading overlay
-  if (isLoading)
+  if (isLoading || !comic)
     return (
-      <div className="flex flex-col justify-center items-center h-screen bg-[#171717] text-white">
+      <div className="flex flex-col justify-center items-center h-screen bg-[#171717] text-white transition-all duration-300">
         <img
           src={icon1}
           alt="Loading..."
-          className="w-24 h-24 animate-pulse mb-3"
+          className="w-32 h-32 animate-pulse mb-3"
         />
-        <p className="text-gray-400">Memuat data...</p>
       </div>
     );
 
@@ -57,17 +56,6 @@ const Detail = () => {
     return (
       <div className="flex justify-center items-center h-screen bg-[#171717] text-white">
         <p className="text-red-500">Gagal memuat data: {error}</p>
-      </div>
-    );
-
-  if (!comic)
-    return (
-      <div className="flex justify-center items-center h-screen bg-[#171717]">
-        <img
-          src={icon1}
-          alt="Logo Outline"
-          className="w-32 h-32 animate-pulse"
-        />
       </div>
     );
 
@@ -173,30 +161,32 @@ const Detail = () => {
             ))}
           </ul>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="-mb-14 mt-6 grid gap-4 lg:gap-6 grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
             {comic.similars && comic.similars.length > 0 ? (
               comic.similars.map((s, i) => (
                 <div
                   key={i}
                   onClick={() => {
-                    fetchDetail(s.detail_url, true);
+                    navigate(`/detail/${s.param}`, { state: s.detail_url });
                     setActiveTab("chapter");
-                    window.history.replaceState({ fromSimilar: true }, "");
                   }}
-                  className="cursor-pointer hover:opacity-90 transition"
+                  className="group relative cursor-pointer transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <img
-                    src={s.thumbnail}
-                    alt={s.title}
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
-                  <p className="mt-2 text-sm text-gray-300 line-clamp-2 text-left">
-                    {s.title}
-                  </p>
+                  <div className="relative w-full overflow-hidden rounded-xl shadow-md shadow-black/30">
+                    <img
+                      src={s.thumbnail}
+                      alt={s.title}
+                      className="w-full h-56 md:h-64 lg:h-72 object-cover rounded-xl transition-transform duration-300 group-hover:scale-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+                    <p className="absolute bottom-2 left-2 right-2 text-white font-semibold text-sm md:text-base line-clamp-2 drop-shadow-md">
+                      {s.title}
+                    </p>
+                  </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-400 text-center col-span-3">
+              <p className="text-gray-400 text-center col-span-full">
                 Tidak ada serial serupa.
               </p>
             )}
@@ -204,7 +194,7 @@ const Detail = () => {
         )}
       </div>
 
-      {/* Read Button — hanya untuk tab Chapter */}
+      {/* Read Button */}
       {activeTab === "chapter" && (
         <div className="fixed bottom-0 left-0 w-full p-4 bg-[#171717]/95 backdrop-blur-md">
           <button

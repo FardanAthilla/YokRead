@@ -7,13 +7,13 @@ import NotFound from "../pages/Error/Error";
 
 const AppRouter = () => {
   return (
-      <Routes>
-        <Route path="*" element={<NotFound />} />
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/detail/:param" element={<Detail />} />
-        <Route path="/chapter/:param" element={<ChapterReader />} />
-      </Routes>
+    <Routes>
+      <Route path="*" element={<NotFound />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/detail/:param/*" element={<Detail />} />
+      <Route path="/chapter/:param" element={<ChapterReader />} />
+    </Routes>
   );
 };
 
