@@ -16,6 +16,7 @@ export interface ComicSimilar {
 }
 
 export interface ComicDetail {
+  param: string | undefined;
   title: string;
   thumbnail: string;
   synopsis: string;

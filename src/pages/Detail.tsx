@@ -1,8 +1,46 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../API/firebase";
 import type { ComicDetail } from "../types/types";
 import icon1 from "../assets/icon1.png";
 
+// LocalStorage helpers
+const LOCAL_KEY = "readHistory";
+
+const getLocalHistory = (): Record<string, string[]> => {
+  const data = localStorage.getItem(LOCAL_KEY);
+  return data ? JSON.parse(data) : {};
+};
+
+const saveLocalHistory = (data: Record<string, string[]>) => {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+};
+
+// Sync to Firebase
+const syncLocalToFirebase = async (uid: string) => {
+  const local = getLocalHistory();
+  const ref = doc(db, "readHistory", uid);
+  const snap = await getDoc(ref);
+
+  let merged = local;
+  if (snap.exists()) {
+    const dbData = snap.data().data || {};
+    merged = { ...dbData, ...local };
+    for (const key in local) {
+      if (dbData[key]) {
+        merged[key] = Array.from(new Set([...dbData[key], ...local[key]]));
+      }
+    }
+  }
+
+  await setDoc(ref, { uid, data: merged });
+  localStorage.removeItem(LOCAL_KEY);
+  return merged;
+};
+
+// Main Component
 const Detail = () => {
   const { param } = useParams();
   const location = useLocation();
@@ -13,6 +51,8 @@ const Detail = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"chapter" | "similar">("chapter");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<any>(null);
+  const [readHistory, setReadHistory] = useState<Record<string, string[]>>({});
 
   // Fetch detail data
   const fetchDetail = async (url?: string) => {
@@ -33,14 +73,51 @@ const Detail = () => {
       setError(err.message);
     } finally {
       setIsLoading(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  // Handle Auth & Sync
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        const synced = await syncLocalToFirebase(u.uid);
+        setReadHistory(synced);
+      } else {
+        setUser(null);
+        setReadHistory(getLocalHistory());
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     fetchDetail(detailUrl);
   }, [param, detailUrl]);
 
+  // Mark chapter as read
+  const markAsRead = async (chapterParam: string) => {
+    if (!comic) return;
+    const key = comic.param || param;
+    if (!key) return;
+
+    const updated = { ...readHistory };
+    const prev = updated[key] || [];
+
+    // Hapus dulu jika sudah pernah ada, lalu tambahkan di akhir
+    const filtered = prev.filter((c) => c !== chapterParam);
+    updated[key] = [...filtered, chapterParam];
+
+    setReadHistory(updated);
+
+    if (user) {
+      await updateDoc(doc(db, "readHistory", user.uid), { data: updated });
+    } else {
+      saveLocalHistory(updated);
+    }
+  };
+
+  // UI Loading / Error
   if (isLoading || !comic)
     return (
       <div className="flex flex-col justify-center items-center h-screen bg-[#171717] text-white transition-all duration-300">
@@ -59,12 +136,13 @@ const Detail = () => {
       </div>
     );
 
+  // Render
   return (
     <div className="min-h-screen bg-[#171717] text-white">
       {/* Header */}
       <div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center z-50">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/")}
           className="p-2 hover:bg-gray-800 rounded-lg transition"
         >
           <svg
@@ -136,29 +214,39 @@ const Detail = () => {
       <div className="px-6 mt-4 pb-20">
         {activeTab === "chapter" ? (
           <ul className="space-y-2">
-            {comic.chapters.map((ch) => (
-              <li
-                key={ch.param}
-                onClick={() => {
-                  navigate(`/chapter/${ch.param}`, {
-                    state: {
-                      detailUrl: ch.detail_url,
-                      chapters: comic.chapters,
-                      parentParam: param,
-                      currentIndex: comic.chapters.findIndex(
-                        (c) => c.param === ch.param
-                      ),
-                    },
-                  });
-                }}
-                className="p-3 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition"
-              >
-                <div className="flex justify-between items-center">
-                  <span>{ch.chapter}</span>
-                  <span className="text-xs text-gray-400">{ch.release}</span>
-                </div>
-              </li>
-            ))}
+            {comic.chapters.map((ch) => {
+              const alreadyRead = readHistory[ch.param]?.includes(ch.param);
+              return (
+                <li
+                  key={ch.param}
+                  onClick={() => {
+                    markAsRead(ch.param);
+                    navigate(`/chapter/${ch.param}`, {
+                      state: {
+                        detailUrl: ch.detail_url,
+                        chapters: comic.chapters,
+                        parentParam: param,
+                        currentIndex: comic.chapters.findIndex(
+                          (c) => c.param === ch.param
+                        ),
+                      },
+                    });
+                  }}
+                  className={`p-3 rounded-lg cursor-pointer transition ${
+                    alreadyRead
+                      ? "bg-gray-700"
+                      : "bg-gray-800 hover:bg-gray-700"
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className={alreadyRead ? "text-green-400" : ""}>
+                      {ch.chapter}
+                    </span>
+                    <span className="text-xs text-gray-400">{ch.release}</span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <div className="-mb-14 mt-6 grid gap-4 lg:gap-6 grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
@@ -194,29 +282,59 @@ const Detail = () => {
         )}
       </div>
 
-      {/* Read Button */}
-      {activeTab === "chapter" && (
-        <div className="fixed bottom-0 left-0 w-full p-4 bg-[#171717]/95 backdrop-blur-md">
-          <button
-            onClick={() => {
-              if (comic.chapters.length > 0) {
-                const first = comic.chapters[comic.chapters.length - 1];
-                navigate(`/chapter/${first.param}`, {
-                  state: {
-                    detailUrl: first.detail_url,
-                    chapters: comic.chapters,
-                    parentParam: param,
-                    currentIndex: comic.chapters.findIndex(
-                      (c) => c.param === first.param
-                    ),
-                  },
-                });
-              }
-            }}
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition"
-          >
-            Baca Episode 1
-          </button>
+      {/* Read Buttons */}
+      {activeTab === "chapter" && comic && (
+        <div className="px-6 fixed bottom-0 left-0 w-full p-4 bg-[#171717]/95 backdrop-blur-md space-y-2">
+          {readHistory[param ?? ""]?.length > 0 ? (
+            (() => {
+              const lastParam = readHistory[param ?? ""]?.slice(-1)[0];
+              const last = comic.chapters.find((c) => c.param === lastParam);
+              const lastLabel = last ? last.chapter : "Terakhir Dibaca";
+
+              return (
+                <button
+                  onClick={() => {
+                    if (last) {
+                      navigate(`/chapter/${last.param}`, {
+                        state: {
+                          detailUrl: last.detail_url,
+                          chapters: comic.chapters,
+                          parentParam: param,
+                          currentIndex: comic.chapters.findIndex(
+                            (c) => c.param === last.param
+                          ),
+                        },
+                      });
+                    }
+                  }}
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition"
+                >
+                  Lanjut Baca {lastLabel}
+                </button>
+              );
+            })()
+          ) : (
+            <button
+              onClick={() => {
+                if (comic.chapters?.length > 0) {
+                  const first = comic.chapters[comic.chapters.length - 1];
+                  navigate(`/chapter/${first.param}`, {
+                    state: {
+                      detailUrl: first.detail_url,
+                      chapters: comic.chapters,
+                      parentParam: param,
+                      currentIndex: comic.chapters.findIndex(
+                        (c) => c.param === first.param
+                      ),
+                    },
+                  });
+                }
+              }}
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition"
+            >
+              Baca Episode 1
+            </button>
+          )}
         </div>
       )}
     </div>
