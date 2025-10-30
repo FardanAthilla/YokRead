@@ -5,6 +5,8 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../API/firebase";
 import type { ComicDetail } from "../types/types";
 import icon1 from "../assets/icon1.png";
+import LoginModal from "../component/Login";
+import { Heart } from "lucide-react";
 
 // LocalStorage helpers
 const LOCAL_KEY = "readHistory";
@@ -54,6 +56,9 @@ const Detail = () => {
   const [user, setUser] = useState<any>(null);
   const [readHistory, setReadHistory] = useState<Record<string, string[]>>({});
 
+  const [showLogin, setShowLogin] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
   // Fetch detail data
   const fetchDetail = async (url?: string) => {
     setIsLoading(true);
@@ -79,6 +84,20 @@ const Detail = () => {
   // Handle Auth & Sync
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        const synced = await syncLocalToFirebase(u.uid);
+        setReadHistory(synced);
+
+        // Cek apakah komik ini sudah difavoritkan
+        const favRef = doc(db, "favorites", u.uid);
+        const favSnap = await getDoc(favRef);
+        if (favSnap.exists()) {
+          const favs = favSnap.data().items || [];
+          setIsFavorite(favs.includes(param));
+        }
+      }
+
       if (u) {
         setUser(u);
         const synced = await syncLocalToFirebase(u.uid);
@@ -117,6 +136,27 @@ const Detail = () => {
     }
   };
 
+//togglefavorit
+  const toggleFavorite = async () => {
+  if (!user) {
+    setShowLogin(true);
+    return;
+  }
+
+  const ref = doc(db, "favorites", user.uid);
+  const snap = await getDoc(ref);
+  let items: string[] = snap.exists() ? snap.data().items || [] : [];
+
+  if (isFavorite) {
+    items = items.filter((p) => p !== param);
+  } else {
+    items.push(param!);
+  }
+
+  await setDoc(ref, { items }, { merge: true });
+  setIsFavorite(!isFavorite);
+};
+
   // UI Loading / Error
   if (isLoading || !comic)
     return (
@@ -140,27 +180,35 @@ const Detail = () => {
   return (
     <div className="min-h-screen bg-[#171717] text-white">
       {/* Header */}
-      <div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center z-50">
-        <button
-          onClick={() => navigate("/")}
-          className="p-2 hover:bg-gray-800 rounded-lg transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className="w-6 h-6 text-white"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-      </div>
+      {/* Header */}
+<div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center justify-between z-50">
+  <button
+    onClick={() => navigate("/")}
+    className="p-2 hover:bg-gray-800 rounded-lg transition"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className="w-6 h-6 text-white"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  </button>
+
+  {/* Tombol Favorit */}
+  <button
+    onClick={toggleFavorite}
+    className={`p-2 rounded-full transition ${
+      isFavorite ? "text-red-500" : "text-gray-400 hover:text-white"
+    }`}
+  >
+    <Heart fill={isFavorite ? "currentColor" : "none"} className="w-6 h-6" />
+  </button>
+</div>
+
 
       {/* Cover & Detail Info */}
       <div className="pt-24 px-6 max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-10">
@@ -337,6 +385,7 @@ const Detail = () => {
           )}
         </div>
       )}
+      <LoginModal show={showLogin} onClose={() => setShowLogin(false)} />
     </div>
   );
 };
