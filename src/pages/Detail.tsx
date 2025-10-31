@@ -6,7 +6,6 @@ import { auth, db } from "../API/firebase";
 import type { ComicDetail } from "../types/types";
 import icon1 from "../assets/icon1.png";
 import LoginModal from "../component/Login";
-import { Heart } from "lucide-react";
 
 // LocalStorage helpers
 const LOCAL_KEY = "readHistory";
@@ -120,12 +119,14 @@ const Detail = () => {
     const key = comic.param || param;
     if (!key) return;
 
+    const fullParam = chapterParam.startsWith(key)
+      ? chapterParam
+      : `${key}-${chapterParam}`;
+
     const updated = { ...readHistory };
     const prev = updated[key] || [];
-
-    // Hapus dulu jika sudah pernah ada, lalu tambahkan di akhir
-    const filtered = prev.filter((c) => c !== chapterParam);
-    updated[key] = [...filtered, chapterParam];
+    const filtered = prev.filter((c) => c !== fullParam);
+    updated[key] = [...filtered, fullParam];
 
     setReadHistory(updated);
 
@@ -136,26 +137,26 @@ const Detail = () => {
     }
   };
 
-//togglefavorit
+  //togglefavorit
   const toggleFavorite = async () => {
-  if (!user) {
-    setShowLogin(true);
-    return;
-  }
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
 
-  const ref = doc(db, "favorites", user.uid);
-  const snap = await getDoc(ref);
-  let items: string[] = snap.exists() ? snap.data().items || [] : [];
+    const ref = doc(db, "favorites", user.uid);
+    const snap = await getDoc(ref);
+    let items: string[] = snap.exists() ? snap.data().items || [] : [];
 
-  if (isFavorite) {
-    items = items.filter((p) => p !== param);
-  } else {
-    items.push(param!);
-  }
+    if (isFavorite) {
+      items = items.filter((p) => p !== param);
+    } else {
+      items.push(param!);
+    }
 
-  await setDoc(ref, { items }, { merge: true });
-  setIsFavorite(!isFavorite);
-};
+    await setDoc(ref, { items }, { merge: true });
+    setIsFavorite(!isFavorite);
+  };
 
   // UI Loading / Error
   if (isLoading || !comic)
@@ -180,35 +181,62 @@ const Detail = () => {
   return (
     <div className="min-h-screen bg-[#171717] text-white">
       {/* Header */}
-      {/* Header */}
-<div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center justify-between z-50">
-  <button
-    onClick={() => navigate("/")}
-    className="p-2 hover:bg-gray-800 rounded-lg transition"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-      className="w-6 h-6 text-white"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-  </button>
+      <div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center justify-between z-50">
+        <button
+          onClick={() => navigate("/")}
+          className="p-2 hover:bg-gray-800 rounded-lg transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="w-6 h-6 text-white"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
 
-  {/* Tombol Favorit */}
-  <button
-    onClick={toggleFavorite}
-    className={`p-2 rounded-full transition ${
-      isFavorite ? "text-red-500" : "text-gray-400 hover:text-white"
-    }`}
-  >
-    <Heart fill={isFavorite ? "currentColor" : "none"} className="w-6 h-6" />
-  </button>
-</div>
-
+        {/* Tombol Favorit */}
+        <button
+          onClick={toggleFavorite}
+          className={`flex items-center gap-2 px-4 py-2 mr-2 rounded-full text-sm font-medium transition ${
+            isFavorite
+              ? "bg-gray-600 text-white hover:bg-gray-400"
+              : "border border-gray-500 text-gray-300 hover:border-gray-400 hover:text-white"
+          }`}
+        >
+          {isFavorite ? (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.5 12.75l6 6 9-13.5"
+                />
+              </svg>
+              Difavoritkan
+            </>
+          ) : (
+            <>
+              <span className="text-lg leading-none">+</span>
+              Favorit
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Cover & Detail Info */}
       <div className="pt-24 px-6 max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-10">
@@ -263,7 +291,10 @@ const Detail = () => {
         {activeTab === "chapter" ? (
           <ul className="space-y-2">
             {comic.chapters.map((ch) => {
-              const alreadyRead = readHistory[ch.param]?.includes(ch.param);
+              const alreadyRead = !!readHistory[
+                comic.param ?? param ?? ""
+              ]?.some((c) => c.endsWith(ch.param));
+
               return (
                 <li
                   key={ch.param}
@@ -280,17 +311,31 @@ const Detail = () => {
                       },
                     });
                   }}
-                  className={`p-3 rounded-lg cursor-pointer transition ${
-                    alreadyRead
-                      ? "bg-gray-700"
-                      : "bg-gray-800 hover:bg-gray-700"
-                  }`}
+                  className="p-3 cursor-pointer transition hover:bg-gray-800"
                 >
                   <div className="flex justify-between items-center">
-                    <span className={alreadyRead ? "text-green-400" : ""}>
-                      {ch.chapter}
-                    </span>
-                    <span className="text-xs text-gray-400">{ch.release}</span>
+                    <div className="flex flex-col">
+                      <span
+                        className={`text-sm ${
+                          alreadyRead ? "text-green-400" : "text-white"
+                        }`}
+                      >
+                        {ch.chapter}
+                      </span>
+                      <span className="text-xs text-gray-400 mt-1">
+                        {ch.release}
+                      </span>
+                    </div>
+
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-bold border transition ${
+                        alreadyRead
+                          ? "border-green-500 text-green-400"
+                          : "border-gray-500 text-gray-300 hover:border-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Baca
+                    </div>
                   </div>
                 </li>
               );
@@ -357,7 +402,7 @@ const Detail = () => {
                   }}
                   className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition"
                 >
-                  Lanjut Baca {lastLabel}
+                  Terakhir Baca {lastLabel}
                 </button>
               );
             })()

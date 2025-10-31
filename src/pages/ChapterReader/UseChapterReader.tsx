@@ -1,7 +1,8 @@
-//Logic
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../../API/firebase";
 import type { ComicChapter } from "../../types/types";
 
 interface LocationState {
@@ -26,7 +27,62 @@ export function useChapterReader() {
   const [loading, setLoading] = useState(true);
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScroll, setLastScroll] = useState(0);
+  const [user, setUser] = useState<any>(null);
 
+  // Local storage helpers
+  const LOCAL_KEY = "readHistory";
+
+  const getLocalHistory = (): Record<string, string[]> => {
+    const data = localStorage.getItem(LOCAL_KEY);
+    return data ? JSON.parse(data) : {};
+  };
+
+  const saveLocalHistory = (data: Record<string, string[]>) => {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+  };
+
+  // Auth listener
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
+  }, []);
+
+  // Mark chapter as read
+const markAsRead = async (chapter: string) => {
+  if (!parentParam) return;
+  const key = parentParam;
+
+  // --- Ambil dari localStorage ---
+  const localData = getLocalHistory();
+  const prevLocal = localData[key] || [];
+
+  // Tambah chapter baru kalau belum ada
+  if (!prevLocal.includes(chapter)) {
+    localData[key] = [...prevLocal, chapter];
+    saveLocalHistory(localData);
+  }
+
+  // --- Simpan ke Firestore kalau login ---
+  if (user) {
+    const ref = doc(db, "readHistory", user.uid);
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+      const dbData = snap.data().data || {};
+      const prevFirestore = dbData[key] || [];
+
+      // Gabung lokal + firestore tanpa duplikat
+      const merged = Array.from(new Set([...prevFirestore, ...localData[key]]));
+
+      dbData[key] = merged;
+      await updateDoc(ref, { data: dbData });
+    } else {
+      await setDoc(ref, { uid: user.uid, data: localData });
+    }
+  }
+};
+
+  // Fetch chapter data
   useEffect(() => {
     const fetchChapter = async () => {
       try {
@@ -39,8 +95,12 @@ export function useChapterReader() {
 
         const res = await fetch(proxyUrl);
         if (!res.ok) throw new Error(`HTTP error! ${res.status}`);
+
         const json = await res.json();
         setPages(json.data);
+
+        // ✅ tandai bab yang sedang dibuka sebagai sudah dibaca
+        if (chapterParam) await markAsRead(chapterParam);
       } catch (err) {
         console.error("Error fetching chapter:", err);
       } finally {
@@ -52,6 +112,7 @@ export function useChapterReader() {
     fetchChapter();
   }, [chapterParam, detailUrl]);
 
+  // Scroll listener (auto-hide navbar)
   useEffect(() => {
     const handleScroll = () => {
       const currentScroll = window.scrollY;
@@ -64,11 +125,16 @@ export function useChapterReader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScroll]);
 
+  // UI actions
   const handleToggleNavbar = () => setShowNavbar((prev) => !prev);
 
-  const goToChapter = (index: number) => {
+  const goToChapter = async (index: number) => {
     if (index < 0 || index >= chapters.length) return;
     const next = chapters[index];
+
+    // ✅ tandai bab baru sebelum pindah
+    await markAsRead(next.param);
+
     setPages([]);
     setShowNavbar(true);
     navigate(`/chapter/${next.param}`, {
@@ -80,6 +146,7 @@ export function useChapterReader() {
     navigate(`/detail/${parentParam}`, { replace: true });
   };
 
+  // Return hook API
   return {
     pages,
     loading,
