@@ -137,6 +137,25 @@ const Detail = () => {
     }
   };
 
+  // Cek status favorit setiap kali param berubah
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (!user || !param) return setIsFavorite(false);
+
+      const favRef = doc(db, "favorites", user.uid);
+      const favSnap = await getDoc(favRef);
+
+      if (favSnap.exists()) {
+        const favs = favSnap.data().items || [];
+        setIsFavorite(favs.includes(param));
+      } else {
+        setIsFavorite(false);
+      }
+    };
+
+    checkFavorite();
+  }, [param, user]);
+
   //togglefavorit
   const toggleFavorite = async () => {
     if (!user) {
@@ -183,7 +202,7 @@ const Detail = () => {
       {/* Header */}
       <div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center justify-between z-50">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(-1)}
           className="p-2 hover:bg-gray-800 rounded-lg transition"
         >
           <svg

@@ -112,7 +112,7 @@ const Home = () => {
                   key={comic.param}
                   className="cursor-pointer hover:scale-105 transition-transform"
                   onClick={() =>
-                    navigate(`/detail/${encodeURIComponent(comic.param)}`, {
+                    navigate(`/detail/${(comic.param)}`, {
                       state: comic.detail_url,
                     })
                   }

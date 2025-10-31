@@ -139,6 +139,7 @@ const markAsRead = async (chapter: string) => {
     setShowNavbar(true);
     navigate(`/chapter/${next.param}`, {
       state: { detailUrl: next.detail_url, chapters, currentIndex: index, parentParam },
+        replace: true, // 👈 ini penting
     });
   };
 
