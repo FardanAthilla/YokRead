@@ -1,28 +1,21 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { Comic } from "../types/types";
-import { Search, LogIn, LogOut } from "lucide-react";
 import icon1 from "../assets/icon1.png";
-import { auth } from "../API/firebase";
-import { signOut, onAuthStateChanged } from "firebase/auth";
-import LoginModal from "../component/Login";
+import Navbar from "../component/Navbar";
 
 const Home = () => {
   const [comics, setComics] = useState<Comic[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [showLogin, setShowLogin] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch data
   const fetchComics = async (pageNumber: number) => {
     try {
       setLoading(true);
       const res = await fetch(`/api-komiku/komiku?page=${pageNumber}`);
       const json = await res.json();
-
       if (json.data?.length > 0) {
         setComics(json.data);
         setHasNext(true);
@@ -40,62 +33,12 @@ const Home = () => {
     fetchComics(page);
   }, [page]);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsub();
-  }, []);
-
-  const handleLogout = async () => {
-    await signOut(auth);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md sticky top-0 z-50 px-6 md:px-10 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-10">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
-          </div>
+      <Navbar /> {/* ✅ Navbar reusable baru */}
 
-          <div className="flex gap-4">
-            <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</Link>
-            <Link to="/genre" className="text-gray-700 hover:text-blue-600 font-medium">Genre</Link>
-            <Link to="/history" className="text-gray-700 hover:text-blue-600 font-medium">History</Link>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/search")}>
-            <Search className="w-6 h-6 text-gray-800 hover:text-green-600" />
-          </button>
-
-          {user ? (
-            <div className="flex items-center gap-3">
-              <img
-                src={user.photoURL}
-                alt={user.displayName}
-                className="w-8 h-8 rounded-full border"
-              />
-              <span className="hidden sm:block font-medium">{user.displayName}</span>
-              <button onClick={handleLogout}>
-                <LogOut className="w-5 h-5 text-gray-700 hover:text-red-500" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowLogin(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition"
-            >
-              <LogIn className="w-5 h-5" /> Login
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* Daftar Komik */}
+      {/* Konten daftar komik */}
       <div className="px-6 sm:px-10 md:px-16 lg:px-24 py-6">
-<div className="px-6 sm:px-10 md:px-16 lg:px-24 py-6">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">Rilis Chapter Baru</h1>
 
         <div className="min-h-[300px]">
@@ -112,7 +55,7 @@ const Home = () => {
                   key={comic.param}
                   className="cursor-pointer hover:scale-105 transition-transform"
                   onClick={() =>
-                    navigate(`/detail/${(comic.param)}`, {
+                    navigate(`/detail/${comic.param}`, {
                       state: comic.detail_url,
                     })
                   }
@@ -162,14 +105,7 @@ const Home = () => {
             Berikutnya →
           </button>
         </div>
-      </div>      </div>
-
-      {/* Modal Login Reusable */}
-      <LoginModal
-        show={showLogin}
-        onClose={() => setShowLogin(false)}
-        onSuccess={() => console.log("Login sukses!")}
-      />
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 //Wrapper
 
-import { useChapterReader } from "./UseChapterReader";
+import { useChapterReader } from "./ChapterReaderLogic";
 import ChapterReaderView from "./ChapterReaderView";
 
 const ChapterReader = () => {

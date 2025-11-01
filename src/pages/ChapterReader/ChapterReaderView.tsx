@@ -1,4 +1,4 @@
-import FadeInImage from "./FadeInImage";
+import FadeInImage from "../../component/FadeInImage";
 import icon1 from "../../assets/icon1.png";
 import type { ComicChapter } from "../../types/types";
 

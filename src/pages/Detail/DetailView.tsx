@@ -35,9 +35,7 @@ const DetailView = ({
   markAsRead,
   setShowLogin,
 }: DetailUIProps) => {
-  // =====================
   // 🔹 Loading State
-  // =====================
   if (isLoading || !comic)
     return (
       <div className="flex flex-col justify-center items-center h-screen bg-[#171717] text-white">
@@ -49,9 +47,7 @@ const DetailView = ({
       </div>
     );
 
-  // =====================
   // 🔹 Error State
-  // =====================
   if (error)
     return (
       <div className="flex justify-center items-center h-screen bg-[#171717] text-white">
@@ -59,9 +55,7 @@ const DetailView = ({
       </div>
     );
 
-  // =====================
   // 🔹 UI Content
-  // =====================
   return (
     <div className="min-h-screen bg-[#171717] text-white">
       {/* Header */}
@@ -295,6 +289,7 @@ const DetailView = ({
               onClick={() => {
                 if (comic.chapters?.length > 0) {
                   const first = comic.chapters[comic.chapters.length - 1];
+                  markAsRead(first.param);
                   navigate(`/chapter/${first.param}`, {
                     state: {
                       detailUrl: first.detail_url,
@@ -309,7 +304,7 @@ const DetailView = ({
               }}
               className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition"
             >
-              Baca Episode 1
+              Mulai Baca
             </button>
           )}
         </div>

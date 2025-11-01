@@ -5,9 +5,7 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../API/firebase";
 import type { ComicDetail } from "../../types/types";
 
-// =======================
 // 🔹 Local Storage Helpers
-// =======================
 const LOCAL_KEY = "readHistory";
 
 const getLocalHistory = (): Record<string, string[]> => {
@@ -19,9 +17,7 @@ const saveLocalHistory = (data: Record<string, string[]>) => {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
 };
 
-// =======================
 // 🔹 Firebase Sync Helpers
-// =======================
 const syncLocalToFirebase = async (uid: string) => {
   const local = getLocalHistory();
   const ref = doc(db, "readHistory", uid);
@@ -44,9 +40,7 @@ const syncLocalToFirebase = async (uid: string) => {
   return merged;
 };
 
-// =======================
 // 🔹 Main Hook (Logic)
-// =======================
 export const useDetailLogic = () => {
   const { param } = useParams();
   const location = useLocation();
@@ -63,9 +57,7 @@ export const useDetailLogic = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // ======================
   // 🔹 Fetch Detail Komik
-  // ======================
   const fetchDetail = async (url?: string) => {
     setIsLoading(true);
     try {
@@ -87,9 +79,7 @@ export const useDetailLogic = () => {
     }
   };
 
-  // ======================
   // 🔹 Auth State & Sync
-  // ======================
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
@@ -111,16 +101,12 @@ export const useDetailLogic = () => {
     return () => unsub();
   }, [param]);
 
-  // ======================
   // 🔹 Fetch Data Detail
-  // ======================
   useEffect(() => {
     fetchDetail(detailUrl);
   }, [param, detailUrl]);
 
-  // ======================
   // 🔹 Mark Chapter Read
-  // ======================
   const markAsRead = async (chapterParam: string) => {
     if (!comic) return;
     const key = comic.param || param;
@@ -144,29 +130,38 @@ export const useDetailLogic = () => {
     }
   };
 
-  // ======================
-  // 🔹 Favorite Handling
-  // ======================
+  // 🔹 Favorite Handling (dengan tanggal)
   const toggleFavorite = async () => {
     if (!user) return setShowLogin(true);
 
     const ref = doc(db, "favorites", user.uid);
     const snap = await getDoc(ref);
-    let items: string[] = snap.exists() ? snap.data().items || [] : [];
+
+    // Ambil data lama (bisa kosong)
+    let items: { param: string; favoritedAt: string }[] = snap.exists()
+      ? snap.data().items || []
+      : [];
 
     if (isFavorite) {
-      items = items.filter((p) => p !== param);
+      // 🔻 Hapus favorit
+      items = items.filter((item) => item.param !== param);
     } else {
-      items.push(param!);
+      // 🔺 Tambah favorit baru dengan tanggal ISO
+      const now = new Date().toISOString();
+      items.push({ param: param!, favoritedAt: now });
     }
 
     await setDoc(ref, { items }, { merge: true });
     setIsFavorite(!isFavorite);
+
+    console.log(
+      isFavorite
+        ? `❌ [Favorite Removed] ${param}`
+        : `⭐ [Favorite Added] ${param} at ${new Date().toLocaleString()}`
+    );
   };
 
-  // ======================
   // 🔹 Expose Logic
-  // ======================
   return {
     // Data
     comic,

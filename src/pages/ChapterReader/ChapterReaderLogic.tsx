@@ -81,7 +81,6 @@ const markAsRead = async (chapter: string) => {
   }
 };
 
-
   // Fetch chapter data
   useEffect(() => {
     const fetchChapter = async () => {

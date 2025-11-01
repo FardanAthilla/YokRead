@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { LogIn } from "lucide-react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../API/firebase";
 
@@ -30,7 +29,7 @@ const LoginModal = ({ show, onClose, onSuccess }: LoginModalProps) => {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white w-80 sm:w-96 p-6 rounded-2xl shadow-2xl text-center relative"
+            className="bg-white/90 w-80 sm:w-96 p-6 rounded-2xl shadow-2xl text-center relative"
             initial={{ scale: 0.8, opacity: 0, y: 30 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 30 }}
@@ -40,16 +39,21 @@ const LoginModal = ({ show, onClose, onSuccess }: LoginModalProps) => {
               Login untuk Melanjutkan
             </h2>
             <p className="text-gray-600 text-sm mb-6">
-              Gunakan akun Google kamu untuk masuk ke aplikasi.
+              Gunakan akun Google kamu untuk dapat akses
             </p>
 
             <button
-              onClick={handleLogin}
-              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 w-full rounded-lg transition duration-200"
-            >
-              <LogIn className="w-5 h-5" />
-              Login dengan Google
-            </button>
+                type="button"
+                onClick={handleLogin}
+                className="w-full flex justify-center items-center gap-2 bg-white text-sm hover:bg-black/5 text-gray-600 p-2 rounded-md hover:bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors duration-300 mb-3"
+              >
+                <img
+                  src="https://www.svgrepo.com/show/475656/google-color.svg"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
+                Masuk menggunakan Google
+              </button>
 
             <button
               onClick={onClose}
