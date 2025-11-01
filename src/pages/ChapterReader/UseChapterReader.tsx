@@ -47,7 +47,6 @@ export function useChapterReader() {
     return () => unsub();
   }, []);
 
-  // Mark chapter as read
 const markAsRead = async (chapter: string) => {
   if (!parentParam) return;
   const key = parentParam;
@@ -56,11 +55,12 @@ const markAsRead = async (chapter: string) => {
   const localData = getLocalHistory();
   const prevLocal = localData[key] || [];
 
-  // Tambah chapter baru kalau belum ada
-  if (!prevLocal.includes(chapter)) {
-    localData[key] = [...prevLocal, chapter];
-    saveLocalHistory(localData);
-  }
+  // Hapus dulu chapter ini dari daftar (kalau sudah ada)
+  const filtered = prevLocal.filter((c: string) => c !== chapter);
+
+  // Tambahkan ke akhir agar jadi "terakhir dibaca"
+  localData[key] = [...filtered, chapter];
+  saveLocalHistory(localData);
 
   // --- Simpan ke Firestore kalau login ---
   if (user) {
@@ -71,16 +71,16 @@ const markAsRead = async (chapter: string) => {
       const dbData = snap.data().data || {};
       const prevFirestore = dbData[key] || [];
 
-      // Gabung lokal + firestore tanpa duplikat
-      const merged = Array.from(new Set([...prevFirestore, ...localData[key]]));
+      const filteredFirestore = prevFirestore.filter((c: string) => c !== chapter);
+      dbData[key] = [...filteredFirestore, chapter];
 
-      dbData[key] = merged;
       await updateDoc(ref, { data: dbData });
     } else {
       await setDoc(ref, { uid: user.uid, data: localData });
     }
   }
 };
+
 
   // Fetch chapter data
   useEffect(() => {

@@ -25,7 +25,7 @@ const History = () => {
   const [history, setHistory] = useState<Record<string, string[]>>({});
   const [comics, setComics] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingRead, setLoadingRead] = useState<string | null>(null); // untuk tombol "Lanjut Baca"
+  const [loadingRead, setLoadingRead] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // 🔐 Ambil riwayat baca dari Firebase atau LocalStorage
@@ -58,7 +58,6 @@ const History = () => {
         try {
           const res = await fetch(`/api-komiku/komiku/${key}`);
           if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-
           const json = await res.json();
           const comic: ComicDetail = json.data;
 
@@ -97,7 +96,7 @@ const History = () => {
       </div>
     );
 
-  // 🎨 Render
+  // 🎨 Render ListView tanpa card + gambar full kiri
   return (
     <div className="min-h-screen bg-[#171717] text-white px-6 py-8">
       <h1 className="text-2xl font-bold mb-6 text-center">Riwayat Bacaan</h1>
@@ -107,7 +106,7 @@ const History = () => {
           Belum ada komik yang dibaca.
         </p>
       ) : (
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="flex flex-col divide-y divide-white/40">
           {comics.map((c) => (
             <div
               key={c.param}
@@ -116,23 +115,29 @@ const History = () => {
                   state: `/api-komiku/komiku/${c.param}`,
                 })
               }
-              className="group cursor-pointer bg-gray-800 rounded-xl overflow-hidden hover:-translate-y-1 transition-transform duration-300"
+              className="flex items-center justify-between cursor-pointer hover:opacity-80 transition py-0.5"
             >
+              {/* Gambar full kiri tanpa padding */}
               <img
                 src={c.thumbnail}
                 alt={c.title}
-                className="w-full h-64 object-cover group-hover:opacity-90"
+                className="w-28 h-28 object-cover flex-shrink-0"
               />
-              <div className="p-3">
-                <h2 className="font-semibold text-sm line-clamp-2 mb-1">
-                  {c.title}
-                </h2>
-                <p className="text-xs text-gray-400 mb-3">
-                  Terakhir dibaca:{" "}
-                  <span className="text-green-400">{c.lastChapter || "-"}</span>
-                </p>
 
-                {/* 🟢 Tombol Lanjut Baca */}
+              {/* Info dan tombol kanan */}
+              <div className="flex justify-between items-center flex-1 pl-4 pr-2">
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-semibold text-base line-clamp-1">
+                    {c.title}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Terakhir dibaca:{" "}
+                    <span className="text-green-400">
+                      {c.lastChapter || "-"}
+                    </span>
+                  </p>
+                </div>
+
                 {c.lastParam && (
                   <button
                     disabled={loadingRead === c.param}
@@ -140,27 +145,24 @@ const History = () => {
                       e.stopPropagation();
                       setLoadingRead(c.param);
                       try {
-                        // 1️⃣ Fetch detail komik dulu
-                        const res = await fetch(`/api-komiku/komiku/${c.param}`);
+                        const res = await fetch(
+                          `/api-komiku/komiku/${c.param}`
+                        );
                         if (!res.ok)
                           throw new Error(`HTTP error! status: ${res.status}`);
-
                         const json = await res.json();
                         const data: ComicDetail = json.data;
 
-                        // 2️⃣ Cari chapter terakhir
                         const last = data.chapters.find(
                           (ch) => ch.param === c.lastParam
                         );
                         if (!last)
                           throw new Error("Chapter terakhir tidak ditemukan");
 
-                        // 3️⃣ Cari index chapter
                         const index = data.chapters.findIndex(
                           (ch) => ch.param === c.lastParam
                         );
 
-                        // 4️⃣ Navigate ke halaman chapter dengan state lengkap
                         navigate(`/chapter/${c.lastParam}`, {
                           state: {
                             detailUrl: last.detail_url,
@@ -175,10 +177,10 @@ const History = () => {
                         setLoadingRead(null);
                       }
                     }}
-                    className={`w-full py-2 rounded-md text-xs font-semibold transition ${
+                    className={`border ml-4 text-sm font-semibold h-8 px-4 rounded-md transition flex items-center justify-center ${
                       loadingRead === c.param
-                        ? "bg-gray-600 cursor-not-allowed"
-                        : "bg-green-500 hover:bg-green-600"
+                        ? "border-gray-600 cursor-not-allowed"
+                        : "border-gray-500 hover:bg-green-600"
                     } text-white`}
                   >
                     {loadingRead === c.param ? "Memuat..." : "Lanjut Baca"}
