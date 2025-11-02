@@ -14,7 +14,7 @@ const Home = () => {
   const fetchComics = async (pageNumber: number) => {
     try {
       setLoading(true);
-      const res = await fetch(`/api-komiku/komiku?page=${pageNumber}`);
+      const res = await fetch(`https://web-scrapper-comic.vercel.app/api/komiku?page=${pageNumber}`);
       const json = await res.json();
       if (json.data?.length > 0) {
         setComics(json.data);

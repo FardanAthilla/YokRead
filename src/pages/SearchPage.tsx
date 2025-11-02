@@ -14,7 +14,7 @@ const SearchPage = () => {
     const fetchSearch = async () => {
       if (!query) return;
       try {
-        const res = await fetch(`/api-komiku/komiku?s=${encodeURIComponent(query)}`);
+        const res = await fetch(`https://web-scrapper-comic.vercel.app/api/komiku?s=${encodeURIComponent(query)}`);
         const json = await res.json();
         setComics(json.data || []);
       } catch (err) {

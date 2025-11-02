@@ -76,7 +76,7 @@ const Favorite = () => {
       try {
         const promises = favorites.map(({ param, favoritedAt }) =>
           limit(async () => {
-            const res = await fetch(`/api-komiku/komiku/${param}`);
+            const res = await fetch(`https://web-scrapper-comic.vercel.app/api/komiku/${param}`);
             if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
             const json = await res.json();
             const comic = json.data;
@@ -190,7 +190,7 @@ const Favorite = () => {
                     alt={c.title}
                     onClick={() =>
                       navigate(`/detail/${c.param}`, {
-                        state: `/api-komiku/komiku/${c.param}`,
+                        state: `https://web-scrapper-comic.vercel.app/api/komiku/${c.param}`,
                       })
                     }
                     className="w-28 h-28 object-cover flex-shrink-0"
@@ -200,7 +200,7 @@ const Favorite = () => {
                     <div
                       onClick={() =>
                         navigate(`/detail/${c.param}`, {
-                          state: `/api-komiku/komiku/${c.param}`,
+                          state: `https://web-scrapper-comic.vercel.app/api/komiku/${c.param}`,
                         })
                       }
                       className="min-w-0 flex-1"

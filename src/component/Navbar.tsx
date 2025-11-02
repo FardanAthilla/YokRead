@@ -44,7 +44,7 @@ const Navbar = () => {
             </Link>
 
             {/* Nav menu (desktop) */}
-            <ul className="hidden sm:flex items-center gap-5 text-base font-semibold">
+            <ul className="flex flex-wrap justify-center gap-4 text-sm font-semibold sm:text-base sm:gap-5">
               <li>
                 <Link to="/" className={isActive("/")}>
                   Home

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../API/firebase";
@@ -43,9 +43,7 @@ const syncLocalToFirebase = async (uid: string) => {
 // 🔹 Main Hook (Logic)
 export const useDetailLogic = () => {
   const { param } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const detailUrl = location.state as string | undefined;
 
   // === State
   const [comic, setComic] = useState<ComicDetail | null>(null);
@@ -58,14 +56,10 @@ export const useDetailLogic = () => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   // 🔹 Fetch Detail Komik
-  const fetchDetail = async (url?: string) => {
+  const fetchDetail = async () => {
     setIsLoading(true);
     try {
-      const proxyUrl =
-        url
-          ?.replace("https://weeb-scraper.onrender.com/api", "/api-komiku")
-          ?.replace("http://weeb-scraper.onrender.com/api", "/api-komiku") ||
-        `/api-komiku/komiku/${param}`;
+      const proxyUrl = `https://web-scrapper-comic.vercel.app/api/komiku/${param}`;
 
       const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -103,8 +97,8 @@ export const useDetailLogic = () => {
 
   // 🔹 Fetch Data Detail
   useEffect(() => {
-    fetchDetail(detailUrl);
-  }, [param, detailUrl]);
+    fetchDetail();
+  }, [param]);
 
   // 🔹 Mark Chapter Read
   const markAsRead = async (chapterParam: string) => {

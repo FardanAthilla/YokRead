@@ -74,7 +74,7 @@ useEffect(() => {
       const fetchPromises = keys.map((key) =>
         limit(async () => {
           try {
-            const res = await fetch(`/api-komiku/komiku/${key}`);
+            const res = await fetch(`https://web-scrapper-comic.vercel.app/api/komiku/${key}`);
             if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
 
             const json = await res.json();
@@ -151,7 +151,7 @@ useEffect(() => {
                 key={c.param}
                 onClick={() =>
                   navigate(`/detail/${c.param}`, {
-                    state: `/api-komiku/komiku/${c.param}`,
+                    state: `https://web-scrapper-comic.vercel.app/api/komiku/${c.param}`,
                   })
                 }
                 className="flex items-center justify-between cursor-pointer hover:opacity-80 transition py-0.5"
@@ -185,7 +185,7 @@ useEffect(() => {
                         setLoadingRead(c.param);
                         try {
                           const res = await fetch(
-                            `/api-komiku/komiku/${c.param}`
+                            `https://web-scrapper-comic.vercel.app/api/komiku/${c.param}`
                           );
                           if (!res.ok)
                             throw new Error(

@@ -4,7 +4,7 @@ import SearchPage from "../pages/SearchPage";
 import Detail from "../pages/Detail/Detail";
 import ChapterReader from "../pages/ChapterReader/ChapterReader";
 import NotFound from "../pages/Error/Error";
-import History from "../pages/History";
+import History from "../pages/History/History";
 import Favorite from "../pages/Favorites";
 
 const AppRouter = () => {
