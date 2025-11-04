@@ -5,7 +5,7 @@ import Detail from "../pages/Detail/Detail";
 import ChapterReader from "../pages/ChapterReader/ChapterReader";
 import NotFound from "../pages/Error/Error";
 import History from "../pages/History/History";
-import Favorite from "../pages/Favorites";
+import Favorite from "../pages/Favorite/Favorite";
 
 const AppRouter = () => {
   return (

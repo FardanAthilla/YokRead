@@ -1,158 +1,29 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db } from "../API/firebase";
-import Navbar from "../component/Navbar";
-import icon1 from "../assets/icon1.png";
-import pLimit from "p-limit";
 import { motion, AnimatePresence } from "framer-motion";
+import Navbar from "../../component/Navbar";
+import icon1 from "../../assets/icon1.png";
+import type { ComicItem, FavoriteData } from "./FavoriteLogic";
 
-const limit = pLimit(5);
-
-interface FavoriteData {
-  param: string;
-  favoritedAt: string;
+interface FavoriteViewProps {
+  loading: boolean;
+  comics: ComicItem[];
+  favorites: FavoriteData[];
+  showConfirm: boolean;
+  navigate: (path: string, opts?: any) => void;
+  toggleFavorite: (param: string) => void;
+  confirmDelete: () => void;
+  cancelDelete: () => void;
 }
 
-interface ComicItem {
-  param: string;
-  title: string;
-  thumbnail: string;
-  favoritedAt?: string;
-}
-
-const Favorite = () => {
-  const [favorites, setFavorites] = useState<FavoriteData[]>([]);
-  const [comics, setComics] = useState<ComicItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedParam, setSelectedParam] = useState<string | null>(null);
-  const navigate = useNavigate();
-
-  // 🔐 Ambil data favorit dari Firebase
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      console.log("📢 [Auth] Login status berubah:", u ? u.uid : "Tidak login");
-      setUser(u);
-      setLoading(true);
-
-      if (u) {
-        const ref = doc(db, "favorites", u.uid);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          const data = snap.data();
-          const favList: FavoriteData[] = data.items || [];
-          favList.sort(
-            (a, b) =>
-              new Date(b.favoritedAt).getTime() -
-              new Date(a.favoritedAt).getTime()
-          );
-          setFavorites(favList);
-        } else {
-          setFavorites([]);
-        }
-      } else {
-        setFavorites([]);
-      }
-      setLoading(false);
-    });
-    return () => unsub();
-  }, []);
-
-  // ⚡ Ambil semua detail komik favorit
-  useEffect(() => {
-    const fetchComics = async () => {
-      if (favorites.length === 0) {
-        setComics([]);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      console.log("🧩 [Fetch] Ambil detail komik favorit:", favorites);
-
-      try {
-        const promises = favorites.map(({ param, favoritedAt }) =>
-          limit(async () => {
-            const res = await fetch(`https://web-scrapper-comic.vercel.app/api/komiku/${param}`);
-            if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-            const json = await res.json();
-            const comic = json.data;
-
-            return {
-              param: comic.param || param,
-              title: comic.title,
-              thumbnail: comic.thumbnail,
-              favoritedAt,
-            } as ComicItem;
-          })
-        );
-
-        const results = (await Promise.all(promises)).filter(
-          Boolean
-        ) as ComicItem[];
-        setComics(results);
-      } catch (err) {
-        console.error("🔥 [Fetch Error] Gagal ambil data favorit:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchComics();
-  }, [favorites]);
-
-  // 🧠 Toggle favorit (hapus atau tambah)
-  const toggleFavorite = async (param: string) => {
-    if (!user) return alert("Silakan login terlebih dahulu.");
-
-    const ref = doc(db, "favorites", user.uid);
-    const snap = await getDoc(ref);
-
-    let items: { param: string; favoritedAt: string }[] = snap.exists()
-      ? snap.data().items || []
-      : [];
-
-    const isFavorite = items.some((item) => item.param === param);
-
-    if (isFavorite) {
-      // Konfirmasi dulu sebelum hapus
-      setSelectedParam(param);
-      setShowConfirm(true);
-      return;
-    } else {
-      // ⭐ Tambah langsung
-      const now = new Date().toISOString();
-      items.push({ param, favoritedAt: now });
-      await setDoc(ref, { items }, { merge: true });
-      setFavorites((prev) => [{ param, favoritedAt: now }, ...prev]);
-    }
-  };
-
-  // ✅ Eksekusi hapus jika dikonfirmasi
-  const confirmDelete = async () => {
-    if (!selectedParam || !user) return;
-    const ref = doc(db, "favorites", user.uid);
-    const snap = await getDoc(ref);
-
-    let items: FavoriteData[] = snap.exists() ? snap.data().items || [] : [];
-    items = items.filter((item) => item.param !== selectedParam);
-
-    await setDoc(ref, { items }, { merge: true });
-    setFavorites((prev) => prev.filter((f) => f.param !== selectedParam));
-    console.log(`❌ [Favorite Removed] ${selectedParam}`);
-
-    setShowConfirm(false);
-    setSelectedParam(null);
-  };
-
-  const cancelDelete = () => {
-    setShowConfirm(false);
-    setSelectedParam(null);
-  };
-
+const FavoriteView = ({
+  loading,
+  comics,
+  favorites,
+  showConfirm,
+  navigate,
+  toggleFavorite,
+  confirmDelete,
+  cancelDelete,
+}: FavoriteViewProps) => {
   if (loading)
     return (
       <div className="bg-[#171717] text-white min-h-screen flex flex-col">
@@ -170,7 +41,8 @@ const Favorite = () => {
   return (
     <div className="min-h-screen bg-[#171717] text-white flex flex-col">
       <Navbar />
-      <div className="px-6 py-2 flex-1">
+
+      <div className="px-4 sm:px-6 py-4 flex-1">
         {comics.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[80vh] text-gray-400 text-center">
             <p>Belum ada komik yang difavoritkan</p>
@@ -179,7 +51,6 @@ const Favorite = () => {
           <div className="flex flex-col divide-y divide-white/40">
             {comics.map((c) => {
               const isFavorite = favorites.some((f) => f.param === c.param);
-
               return (
                 <div
                   key={c.param}
@@ -193,7 +64,7 @@ const Favorite = () => {
                         state: `https://web-scrapper-comic.vercel.app/api/komiku/${c.param}`,
                       })
                     }
-                    className="w-28 h-28 object-cover flex-shrink-0"
+                    className="w-20 h-24 sm:w-24 sm:h-28 md:w-28 md:h-32 object-cover flex-shrink-0 rounded"
                   />
 
                   <div className="flex justify-between items-center flex-1 pl-4 pr-2">
@@ -227,7 +98,7 @@ const Favorite = () => {
                         e.stopPropagation();
                         toggleFavorite(c.param);
                       }}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                      className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition ${
                         isFavorite
                           ? "bg-gray-600 text-white hover:bg-gray-400"
                           : "border border-gray-500 text-gray-300 hover:border-gray-400 hover:text-white"
@@ -249,12 +120,12 @@ const Favorite = () => {
                               d="M4.5 12.75l6 6 9-13.5"
                             />
                           </svg>
-                          Difavoritkan
+                          <span>Difavoritkan</span>
                         </>
                       ) : (
                         <>
                           <span className="text-lg leading-none">+</span>
-                          Favorit
+                          <span>Favorit</span>
                         </>
                       )}
                     </button>
@@ -311,4 +182,4 @@ const Favorite = () => {
   );
 };
 
-export default Favorite;
+export default FavoriteView;
