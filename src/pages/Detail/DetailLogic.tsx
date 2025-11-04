@@ -85,7 +85,7 @@ export const useDetailLogic = () => {
         const favSnap = await getDoc(favRef);
         if (favSnap.exists()) {
           const favs = favSnap.data().items || [];
-          setIsFavorite(favs.includes(param));
+          setIsFavorite(favs.some((item: any) => item.param === param));
         }
       } else {
         setUser(null);
