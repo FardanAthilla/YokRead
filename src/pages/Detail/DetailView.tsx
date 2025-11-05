@@ -61,7 +61,7 @@ const DetailView = ({
       {/* Header */}
       <div className="fixed top-0 left-0 w-full bg-[#171717]/90 backdrop-blur-md p-3 flex items-center justify-between z-50">
         <button
-          onClick={() => navigate("/history")}
+          onClick={() => navigate(-1 as any)}
           className="p-2 hover:bg-gray-800 rounded-lg transition"
         >
           <svg

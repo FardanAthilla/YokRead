@@ -143,7 +143,7 @@ const markAsRead = async (chapter: string) => {
   };
 
   const handleBack = () => {
-    navigate(`/detail/${parentParam}`, { replace: true });
+    navigate(-1);
   };
 
   // Return hook API
