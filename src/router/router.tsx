@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home/Home";
-import SearchPage from "../pages/SearchPage";
+import SearchPage from "../pages/Search/Search";
 import Detail from "../pages/Detail/Detail";
 import ChapterReader from "../pages/ChapterReader/ChapterReader";
 import NotFound from "../pages/Error/Error";

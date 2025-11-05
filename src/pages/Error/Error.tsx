@@ -8,7 +8,7 @@ const NotFound = () => {
     <div className="flex flex-col justify-center items-center h-screen text-center bg-white">
       <img
         src= {icon1}
-        alt="WEBTOON Logo"
+        alt="Logo"
         className="w-48 opacity-20 mb-6"
       />
 
