@@ -18,8 +18,7 @@ const AppRouter = () => {
       <Route path="/chapter/:param" element={<ChapterReader />} />
       <Route path="/history" element={<History />} />
       <Route path="/favorites" element={<Favorite />} />
-            <Route path="/genre/" element={<GenreView />} />
-
+      <Route path="/genre/" element={<GenreView />} />
     </Routes>
   );
 };

@@ -47,39 +47,41 @@ export function useChapterReader() {
     return () => unsub();
   }, []);
 
-const markAsRead = async (chapter: string) => {
-  if (!parentParam) return;
-  const key = parentParam;
+  const markAsRead = async (chapter: string) => {
+    if (!parentParam) return;
+    const key = parentParam;
 
-  // --- Ambil dari localStorage ---
-  const localData = getLocalHistory();
-  const prevLocal = localData[key] || [];
+    // --- Ambil dari localStorage ---
+    const localData = getLocalHistory();
+    const prevLocal = localData[key] || [];
 
-  // Hapus dulu chapter ini dari daftar (kalau sudah ada)
-  const filtered = prevLocal.filter((c: string) => c !== chapter);
+    // Hapus dulu chapter ini dari daftar (kalau sudah ada)
+    const filtered = prevLocal.filter((c: string) => c !== chapter);
 
-  // Tambahkan ke akhir agar jadi "terakhir dibaca"
-  localData[key] = [...filtered, chapter];
-  saveLocalHistory(localData);
+    // Tambahkan ke akhir agar jadi "terakhir dibaca"
+    localData[key] = [...filtered, chapter];
+    saveLocalHistory(localData);
 
-  // --- Simpan ke Firestore kalau login ---
-  if (user) {
-    const ref = doc(db, "readHistory", user.uid);
-    const snap = await getDoc(ref);
+    // --- Simpan ke Firestore kalau login ---
+    if (user) {
+      const ref = doc(db, "readHistory", user.uid);
+      const snap = await getDoc(ref);
 
-    if (snap.exists()) {
-      const dbData = snap.data().data || {};
-      const prevFirestore = dbData[key] || [];
+      if (snap.exists()) {
+        const dbData = snap.data().data || {};
+        const prevFirestore = dbData[key] || [];
 
-      const filteredFirestore = prevFirestore.filter((c: string) => c !== chapter);
-      dbData[key] = [...filteredFirestore, chapter];
+        const filteredFirestore = prevFirestore.filter(
+          (c: string) => c !== chapter
+        );
+        dbData[key] = [...filteredFirestore, chapter];
 
-      await updateDoc(ref, { data: dbData });
-    } else {
-      await setDoc(ref, { uid: user.uid, data: localData });
+        await updateDoc(ref, { data: dbData });
+      } else {
+        await setDoc(ref, { uid: user.uid, data: localData });
+      }
     }
-  }
-};
+  };
 
   // Fetch chapter data
   useEffect(() => {
@@ -88,9 +90,15 @@ const markAsRead = async (chapter: string) => {
         setLoading(true);
         const proxyUrl =
           detailUrl
-            ?.replace("https://weeb-scraper.onrender.com/api", "/api-komiku")
-            ?.replace("http://weeb-scraper.onrender.com/api", "/api-komiku") ||
-          `/api-komiku/chapter/${chapterParam}`;
+            ?.replace(
+              "https://weeb-scraper.onrender.com/api",
+              "https://web-scrapper-comic.vercel.app/api"
+            )
+            ?.replace(
+              "http://weeb-scraper.onrender.com/api",
+              "https://web-scrapper-comic.vercel.app/api"
+            ) ||
+          `https://web-scrapper-comic.vercel.app/api/komiku/chapter/${chapterParam}`;
 
         const res = await fetch(proxyUrl);
         if (!res.ok) throw new Error(`HTTP error! ${res.status}`);
@@ -137,8 +145,13 @@ const markAsRead = async (chapter: string) => {
     setPages([]);
     setShowNavbar(true);
     navigate(`/chapter/${next.param}`, {
-      state: { detailUrl: next.detail_url, chapters, currentIndex: index, parentParam },
-        replace: true, // 👈 ini penting
+      state: {
+        detailUrl: next.detail_url,
+        chapters,
+        currentIndex: index,
+        parentParam,
+      },
+      replace: true, // 👈 ini penting
     });
   };
 
