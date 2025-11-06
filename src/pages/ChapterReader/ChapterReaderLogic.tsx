@@ -88,17 +88,12 @@ export function useChapterReader() {
     const fetchChapter = async () => {
       try {
         setLoading(true);
+        const baseUrl = "https://web-scrapper-comic.vercel.app/api";
         const proxyUrl =
           detailUrl
-            ?.replace(
-              "https://weeb-scraper.onrender.com/api",
-              "https://web-scrapper-comic.vercel.app/api"
-            )
-            ?.replace(
-              "http://weeb-scraper.onrender.com/api",
-              "https://web-scrapper-comic.vercel.app/api"
-            ) ||
-          `https://web-scrapper-comic.vercel.app/api/komiku/chapter/${chapterParam}`;
+            ?.replace("https://weeb-scraper.onrender.com/api", baseUrl)
+            ?.replace("http://weeb-scraper.onrender.com/api", baseUrl) ||
+          `${baseUrl}/komiku/chapter/${chapterParam}`;
 
         const res = await fetch(proxyUrl);
         if (!res.ok) throw new Error(`HTTP error! ${res.status}`);
