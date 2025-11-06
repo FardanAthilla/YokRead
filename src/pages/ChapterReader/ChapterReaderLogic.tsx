@@ -92,7 +92,7 @@ export function useChapterReader() {
         const proxyUrl =
           detailUrl
             ?.replace("https://weeb-scraper.onrender.com/api", baseUrl)
-            ?.replace("http://weeb-scraper.onrender.com/api", baseUrl) ||
+            ?.replace("https://weeb-scraper.onrender.com/api", baseUrl) ||
           `${baseUrl}/komiku/chapter/${chapterParam}`;
 
         const res = await fetch(proxyUrl);
