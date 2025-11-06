@@ -6,6 +6,7 @@ import ChapterReader from "../pages/ChapterReader/ChapterReader";
 import NotFound from "../pages/Error/Error";
 import History from "../pages/History/History";
 import Favorite from "../pages/Favorite/Favorite";
+import GenreView from "../pages/Genre/Genre";
 
 const AppRouter = () => {
   return (
@@ -17,6 +18,8 @@ const AppRouter = () => {
       <Route path="/chapter/:param" element={<ChapterReader />} />
       <Route path="/history" element={<History />} />
       <Route path="/favorites" element={<Favorite />} />
+            <Route path="/genre/" element={<GenreView />} />
+
     </Routes>
   );
 };
