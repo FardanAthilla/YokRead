@@ -142,7 +142,7 @@ const HomeView = ({
         {/* 🔸 Thumbnails Section */}
         <section className="mt-8">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Chapter Baru</h3>
+            <h3 className="text-lg font-semibold">Manhwa Chapter Baru</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => scrollThumbnails("left")}
@@ -211,7 +211,7 @@ const HomeView = ({
 
         {/* 🔸 All Comics Grid */}
         <section className="mt-10">
-          <h3 className="text-lg font-semibold mb-4">Semua Komik</h3>
+          <h3 className="text-lg font-semibold mb-4">Semua Manhwa</h3>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
             {allComics.map((c) => (
               <div

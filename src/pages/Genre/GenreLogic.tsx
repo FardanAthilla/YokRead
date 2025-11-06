@@ -3,7 +3,7 @@ import type { Comic } from "../../types/types";
 
 export type GenreKey =
   | "action"
-  | "romance"
+  | "psychological"
   | "fantasy"
   | "game"
   | "adventure"
@@ -13,7 +13,7 @@ export type GenreKey =
 
 export const GENRE_LABELS: Record<GenreKey, string> = {
   action: "Action",
-  romance: "Romance",
+  psychological: "Psychological",
   fantasy: "Fantasy",
   game: "Game",
   adventure: "Adventure",
@@ -30,7 +30,7 @@ export const useGenreViewLogic = () => {
     Record<GenreKey, Comic[] | null>
   >({
     action: null,
-    romance: null,
+    psychological: null,
     fantasy: null,
     game: null,
     adventure: null,
@@ -41,7 +41,7 @@ export const useGenreViewLogic = () => {
 
   const [pageByGenre, setPageByGenre] = useState<Record<GenreKey, number>>({
     action: 1,
-    romance: 1,
+    psychological: 1,
     fantasy: 1,
     game: 1,
     adventure: 1,
@@ -86,7 +86,6 @@ export const useGenreViewLogic = () => {
     if (comicsByGenre[activeTab] === null) {
       fetchGenre(activeTab, 1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   // 🔹 Infinite scroll
@@ -109,7 +108,6 @@ export const useGenreViewLogic = () => {
     if (lastItemRef.current) {
       observer.current.observe(lastItemRef.current);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, comicsByGenre[activeTab], loading]);
 
   const items = comicsByGenre[activeTab] ?? [];

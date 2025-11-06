@@ -26,6 +26,7 @@ export interface ComicDetail {
 }
 
 export interface Comic {
+  type: any;
   title: string;
   description: string;
   latest_chapter: string;
