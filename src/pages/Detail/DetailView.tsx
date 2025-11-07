@@ -220,7 +220,7 @@ const DetailView = ({
             })}
           </ul>
         ) : (
-          <div className="-mb-14 mt-6 grid gap-4 lg:gap-6 grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
+          <div className="-mb-14 mt-6 grid gap-4 lg:gap-6 grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
             {comic.similars && comic.similars.length > 0 ? (
               comic.similars.map((s, i) => (
                 <div
