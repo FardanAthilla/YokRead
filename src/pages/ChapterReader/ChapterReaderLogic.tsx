@@ -91,12 +91,11 @@ export function useChapterReader() {
         const baseUrl = "https://web-scrapper-comic.vercel.app/api";
         const proxyUrl =
           detailUrl
-            ?.replace("https://weeb-scraper.onrender.com/api", baseUrl)
-            ?.replace("http://weeb-scraper.onrender.com/api", baseUrl) ||
+            ?.replace(/^http:\/\//i, "https://") // 🔹 Ganti http → https
+            ?.replace("https://weeb-scraper.onrender.com/api", baseUrl) ||
           `${baseUrl}/komiku/chapter/${chapterParam}`;
 
         const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error(`HTTP error! ${res.status}`);
 
         const json = await res.json();
         setPages(json.data);
