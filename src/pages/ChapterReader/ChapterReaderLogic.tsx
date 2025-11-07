@@ -88,12 +88,12 @@ export function useChapterReader() {
     const fetchChapter = async () => {
       try {
         setLoading(true);
-        const baseUrl = "https://web-scrapper-comic.vercel.app/api";
+        const baseUrl = "";
         const proxyUrl =
           detailUrl
-            ?.replace(/^http:\/\//i, "https://") // 🔹 Ganti http → https
-            ?.replace("https://weeb-scraper.onrender.com/api", baseUrl) ||
-          `${baseUrl}/komiku/chapter/${chapterParam}`;
+            ?.replace(/^http:\/\//i, "https://")
+            ?.replace("", baseUrl) ||
+          `${baseUrl}${chapterParam}`;
 
         const res = await fetch(proxyUrl);
 
