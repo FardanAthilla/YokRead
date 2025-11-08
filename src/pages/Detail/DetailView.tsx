@@ -180,7 +180,7 @@ const DetailView = ({
                     markAsRead(ch.param);
                     navigate(`/chapter/${ch.param}`, {
                       state: {
-                        detailUrl: ch.detail_url,
+                        detailUrl: "",
                         chapters: comic.chapters,
                         parentParam: param,
                         currentIndex: comic.chapters.findIndex(
@@ -268,7 +268,7 @@ const DetailView = ({
                     if (last) {
                       navigate(`/chapter/${last.param}`, {
                         state: {
-                          detailUrl: last.detail_url,
+                          detailUrl: "",
                           chapters: comic.chapters,
                           parentParam: param,
                           currentIndex: comic.chapters.findIndex(

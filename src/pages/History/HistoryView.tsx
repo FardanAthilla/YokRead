@@ -1,4 +1,3 @@
-// src/views/HistoryView.tsx
 import Navbar from "../../component/Navbar";
 import icon1 from "../../assets/icon1.png";
 import type { HistoryItem } from "./HistoryLogic";
@@ -7,7 +6,7 @@ interface Props {
   comics: HistoryItem[];
   loading: boolean;
   loadingRead: string | null;
-  onContinue: (comic: HistoryItem) => Promise<void>;
+  onContinue: (comic: "") => Promise<void>;
   onNavigateDetail: (param: string) => void;
 }
 
@@ -70,7 +69,7 @@ export const HistoryView = ({
                       disabled={loadingRead === c.param}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onContinue(c);
+                        onContinue("");
                       }}
                       className={`border text-xs sm:text-sm font-semibold h-8 sm:h-9 px-3 sm:px-4 rounded-md transition flex items-center justify-center whitespace-nowrap flex-shrink-0 ${
                         loadingRead === c.param
