@@ -3,13 +3,12 @@ import type { Comic } from "../../types/types";
 
 const AUTOPLAY_INTERVAL = 3000;
 const TRANSITION_DURATION = 400;
-const MAX_TOTAL_COMICS = 20;
 
 export const useHomeLogic = () => {
   const [featuredComics, setFeaturedComics] = useState<Comic[]>([]);
   const [allComics, setAllComics] = useState<Comic[]>([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(2);
   const [hasNext, setHasNext] = useState(true);
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -18,97 +17,46 @@ export const useHomeLogic = () => {
   const autoplayRef = useRef<number | null>(null);
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  // 🔹 Ambil 10 Manhwa pertama untuk featured
+  // 🔹 Fetch page 1 (featured)
   const fetchFeatured = async () => {
     try {
       setLoading(true);
-      const limit = 10;
-      let collected: Comic[] = [];
-      let currentPage = 1;
-
-      while (collected.length < limit) {
-        const res = await fetch(
-          `https://web-scrapper-comic.vercel.app/api/komiku?page=${currentPage}`
-        );
-        const json = await res.json();
-
-        const manhwaOnly = (json.data || []).filter(
-          (item: Comic) => item.type?.trim().toLowerCase() === "manhwa"
-        );
-
-        if (!manhwaOnly.length && (!json.data || !json.data.length)) break;
-
-        const remaining = limit - collected.length;
-        collected.push(...manhwaOnly.slice(0, remaining));
-
-        if (collected.length >= limit) break;
-        currentPage++;
-      }
-
-      // Hapus duplikat (kalau param sama)
-      const unique = Array.from(
-        new Map(collected.map((c) => [c.param, c])).values()
+      const res = await fetch(
+        `https://web-scrapper-comic.vercel.app/api/komiku/manhwapopuler?page=1`
       );
-      setFeaturedComics(unique.slice(0, limit));
-
-      return { lastPage: currentPage };
+      const json = await res.json();
+      if (json.data?.length > 0) {
+        setFeaturedComics(json.data);
+      }
     } catch (err) {
-      console.error("❌ Gagal ambil featured:", err);
-      return { lastPage: 1 };
+      console.error("Gagal mengambil featured:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Ambil daftar komik lanjutan (tidak ambil yg udah di featured)
-  const fetchAllComics = async (startPage: number, featuredList: Comic[]) => {
+  // 🔹 Fetch page 2, 3, dst (all)
+  const fetchAllComics = async (pageNumber: number) => {
     try {
-      if (loading || !hasNext) return;
       setLoading(true);
-
-      let collected: Comic[] = [];
-      const featuredParams = new Set(featuredList.map((f) => f.param));
-      const existingParams = new Set(allComics.map((a) => a.param));
-      let currentPage = startPage;
-      let hasMore = true;
-
-      while (collected.length < 10 && hasMore) {
-        const res = await fetch(
-          `https://web-scrapper-comic.vercel.app/api/komiku?page=${currentPage}`
-        );
-        const json = await res.json();
-
-        let manhwaOnly = (json.data || []).filter(
-          (item: Comic) =>
-            item.type?.trim().toLowerCase() === "manhwa" &&
-            !featuredParams.has(item.param) &&
-            !existingParams.has(item.param)
-        );
-
-        collected.push(...manhwaOnly);
-
-        if (!json.data || json.data.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        if (collected.length < 10) currentPage++;
+      const res = await fetch(
+        `https://web-scrapper-comic.vercel.app/api/komiku/manhwapopuler?page=${pageNumber}`
+      );
+      const json = await res.json();
+      if (json.data?.length > 0) {
+        setAllComics((prev) => {
+          const merged = [...prev, ...json.data];
+          const unique = Array.from(
+            new Map(merged.map((item) => [item.param, item])).values()
+          );
+          return unique;
+        });
+        setHasNext(true);
+      } else {
+        setHasNext(false);
       }
-
-      // Gabungkan tanpa duplikat & batasi maksimal 25 data
-      setAllComics((prev) => {
-        const merged = [...prev, ...collected];
-        const unique = Array.from(
-          new Map(merged.map((c) => [c.param, c])).values()
-        );
-        return unique.slice(0, MAX_TOTAL_COMICS);
-      });
-
-      // Stop fetch kalau udah 25 data
-      setHasNext(allComics.length + collected.length < MAX_TOTAL_COMICS);
-      setPage(currentPage + 1);
     } catch (err) {
-      console.error("❌ Gagal ambil allComics:", err);
+      console.error("Gagal mengambil semua komik:", err);
     } finally {
       setLoading(false);
     }
@@ -116,26 +64,28 @@ export const useHomeLogic = () => {
 
   // 🔹 Load awal
   useEffect(() => {
-    const load = async () => {
-      const { lastPage } = await fetchFeatured();
-      await fetchAllComics(lastPage + 1, []);
-    };
-    load();
+    fetchFeatured();
+    fetchAllComics(2);
   }, []);
 
-  // 🔹 Infinite scroll observer
+  // 🔹 Infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loading && hasNext) {
-          fetchAllComics(page, featuredComics);
+        if (entries[0].isIntersecting && !loading && hasNext && page < 5) {
+          setPage((prev) => prev + 1);
         }
       },
       { threshold: 1.0 }
     );
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
-  }, [loading, hasNext, page, featuredComics]);
+  }, [loading, hasNext, page]);
+
+  // 🔹 Fetch page berikutnya
+  useEffect(() => {
+    if (page > 2) fetchAllComics(page);
+  }, [page]);
 
   // 🔹 Autoplay untuk featured
   const startAutoplay = useCallback(() => {
@@ -175,6 +125,7 @@ export const useHomeLogic = () => {
   const featured = featuredComics[featuredIndex];
 
   return {
+    // 📦 State
     featuredComics,
     allComics,
     featured,
@@ -183,8 +134,12 @@ export const useHomeLogic = () => {
     loading,
     hasNext,
     page,
+
+    // 📦 Refs
     sliderRef,
     observerRef,
+
+    // 📦 Actions
     scrollThumbnails,
   };
 };
